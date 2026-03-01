@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Финансово Бинго - Full Sound Edition</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Roboto+Condensed:wght@700&display=swap');
+
+        :root {
+            --dark-blue: #1a428a;
+            --ans-red: #e11d48;
+            --gold: #f2c94c;
+            --ball-grad: radial-gradient(circle at 35% 35%, #ffffff 0%, #ffecd2 30%, #f2994a 80%, #e67e22 100%);
+        }
+
+        body, html {
+            margin: 0; padding: 0; height: 100vh;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: radial-gradient(circle, #1a428a 0%, #000 100%);
+            color: white; overflow: hidden;
+        }
+
+        #game-container { display: flex; height: 100vh; align-items: center; justify-content: space-around; padding: 20px; box-sizing: border-box; }
+        
+        #lotto-sphere {
+            width: 480px; height: 480px; background: rgba(255,255,255,0.05);
+            border: 12px solid rgba(242, 201, 76, 0.4); border-radius: 50%; position: relative; overflow: hidden;
+            box-shadow: inset 0 0 50px #000;
+        }
+        .ball {
+            position: absolute; width: 48px; height: 48px; background: var(--ball-grad);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            color: #1a428a; font-weight: bold; font-size: 22px; box-shadow: 2px 4px 8px rgba(0,0,0,0.5);
+        }
+
+        .card-inner { 
+            width: 550px; height: 320px; background: white; border-radius: 35px; border: 10px solid var(--gold);
+            display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; box-sizing: border-box;
+            color: #1a428a; font-size: 32px; font-weight: bold; margin-bottom: 25px; line-height: 1.3;
+        }
+        #draw-btn { 
+            background: #f2994a; color: white; font-size: 30px; padding: 20px 60px;
+            border: none; border-radius: 50px; cursor: pointer; font-weight: bold;
+            box-shadow: 0 8px #b36b2a;
+        }
+
+        /* ИСТОРИЯ/ПРОВЕРКА */
+        #history-overlay, #teacher-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.95); display: none; flex-direction: column; 
+            align-items: center; justify-content: center; z-index: 2000; 
+        }
+        #teacher-overlay { z-index: 4000; }
+        #history-content { 
+            background: #fff; color: #222; width: 85%; max-height: 70%; 
+            border-radius: 20px; padding: 35px; overflow-y: auto; 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; 
+        }
+        .history-item { background: #fdf2e9; padding: 15px; border-radius: 12px; border-left: 8px solid #f2994a; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: space-between;}
+        .history-item small { color: #888; display: block; margin-bottom: 10px; font-size: 14px; font-weight: bold;}
+        .history-item img { max-width: 120px; max-height: 80px; margin-top: 15px; object-fit: contain; }
+        .history-item p { margin: 0; font-size: 16px; font-weight: bold; color: #1a428a; }
+
+        /* УЧИТЕЛСКИ ПАНЕЛ */
+        #teacher-content {
+            background: #fff; color: #222; width: 85%; max-height: 80%; 
+            border-radius: 20px; padding: 35px; overflow-y: auto; 
+        }
+        .teacher-item { display: flex; align-items: center; margin-bottom: 15px; background: #f0f0f0; padding: 10px; border-radius: 8px; }
+        .teacher-item img { width: 50px; height: auto; margin-right: 15px; }
+        .teacher-item textarea { flex-grow: 1; height: 50px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-family: inherit; resize: vertical; }
+
+        /* ПЕЧАТ (от euro-bingo.html) */
+        #tickets-layer { display: none; background: white; color: black; }
+        .page { width: 21cm; min-height: 29.7cm; padding: 1cm; margin: 0 auto; background: white; display: flex; flex-direction: column; align-items: center; box-sizing: border-box; page-break-after: always; }
+        .ticket { width: 18.5cm; height: 13cm; border: 5px solid #1a428a; border-radius: 20px; margin-bottom: 1.2cm; padding: 15px 25px; box-sizing: border-box; background: #fff; display: flex; flex-direction: column; page-break-inside: avoid; }
+        .ticket-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #eee; margin-bottom: 10px; padding-bottom: 5px; }
+        .ticket-title { font-family: 'Oswald', sans-serif; font-size: 48px; font-weight: 700; text-transform: uppercase; margin: 0; display: flex; gap: 2px; }
+        .b { color: #e6194B; } .i { color: #3cb44b; } .n { color: #ffe119; } .g { color: #4363d8; } .o { color: #f58231; }
+        .sub-title { font-family: 'Oswald', sans-serif; font-size: 18px; color: #1a428a; letter-spacing: 1px; font-weight: 500; }
+        .ticket-number { font-family: 'Oswald', sans-serif; font-size: 22px; background: #1a428a; color: white; padding: 5px 12px; border-radius: 8px; }
+        .ticket table { border-collapse: separate; border-spacing: 8px; width: 100%; height: 100%; flex-grow: 1; }
+        .ticket td { border: 3px solid #ddd; width: 33.3%; height: 33.3%; text-align: center; vertical-align: middle; background: #fff; border-radius: 12px; }
+        .item-img { max-width: 85%; max-height: 95px; object-fit: contain; display: block; margin: 0 auto; }
+        .ticket-footer { margin-top: 8px; display: flex; justify-content: space-between; font-family: 'Roboto Condensed', sans-serif; font-size: 13px; color: #555; text-transform: uppercase; }
+
+        @media print {
+            body { background: white; overflow: visible; }
+            #intro-screen, #game-container, #history-overlay, #teacher-overlay { display: none !important; }
+            #tickets-layer { display: block !important; }
+            .page { margin: 0; padding: 0.5cm; }
+        }
+
+        #intro-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #1a428a, #000); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 3000; }
+        .btn-main { padding:15px 30px; border-radius:30px; border:none; cursor:pointer; font-weight:bold; margin: 0 10px; font-size: 18px;}
+    </style>
+</head>
+<body>
+
+    <div id="intro-screen">
+        <h1 style="font-size: 60px; color: var(--gold); margin-bottom: 10px; text-align: center;">ФИНАНСОВО БИНГО</h1>
+        <p style="font-size: 24px; margin-bottom: 40px; text-align: center;">РАЗПОЗНАВАНЕ НА ЕВРО МОНЕТИ И БАНКНОТИ</p>
+        <div>
+            <button onclick="toggleTeacher(true)" class="btn-main" style="background: #e11d48; color: white;">⚙️ УЧИТЕЛ</button>
+            <button onclick="prepareAndPrint()" class="btn-main" style="background: white; color: black;">🖨️ ПЕЧАТ НА БИЛЕТИ</button>
+            <button onclick="startGame()" class="btn-main" style="background:var(--gold); color: #1a428a;">🚀 СТАРТ</button>
+        </div>
+        
+        <div style="position: absolute; bottom: 30px; color: rgba(255, 255, 255, 0.6); font-size: 18px; letter-spacing: 1px; font-weight: bold;">
+            Създадено от: Дочка Кючукова
+        </div>
+    </div>
+
+    <div id="teacher-overlay">
+        <h1 style="color: var(--gold); margin-bottom:20px;">РЕДАКЦИЯ НА ВЪПРОСИТЕ</h1>
+        <div id="teacher-content"></div>
+        <div style="margin-top:25px; display: flex; gap: 20px;">
+            <button onclick="saveTeacherTasks()" style="padding:12px 40px; background:#3cb44b; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold; font-size: 18px;">ЗАПАЗИ</button>
+            <button onclick="toggleTeacher(false)" style="padding:12px 40px; background:var(--ans-red); color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold; font-size: 18px;">ОТКАЗ</button>
+        </div>
+    </div>
+
+    <div id="game-container">
+        <div style="text-align:center;">
+            <div id="lotto-sphere"></div>
+            <button onclick="toggleHistory(true)" style="margin-top:20px; background:none; border:2px solid white; color:white; padding:12px 25px; border-radius:10px; cursor:pointer; font-weight: bold; font-size: 18px;">📋 ПРОВЕРКА / ИСТОРИЯ</button>
+        </div>
+        <div style="text-align:center;">
+            <div class="card-inner" id="card-display">Готови ли сте?</div>
+            <button id="draw-btn" onclick="drawBall()">ИЗТЕГЛИ ЗАГАДКА</button>
+        </div>
+    </div>
+
+    <div id="tickets-layer"></div>
+
+    <div id="history-overlay">
+        <h1 style="color: var(--gold); margin-bottom:20px;">ИЗТЕГЛЕНИ ЗАДАЧИ</h1>
+        <div id="history-content"></div>
+        <button onclick="toggleHistory(false)" style="margin-top:25px; padding:12px 40px; background:var(--ans-red); color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold; font-size: 18px;">ЗАТВОРИ</button>
+    </div>
+
+    <script>
+        // ЗВУКОВА СИСТЕМА (запазена от математическото бинго)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(freq, duration, type="sine", vol=0.1) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + duration);
+        }
+
+        // БАЗА С ВЪПРОСИ (по подразбиране)
+        const defaultTasks = [
+            { id: "1", img: "1.png", q: "Ако имаш 10 цента и похарчиш 9, коя монета ти остава в джоба?" },
+            { id: "2", img: "2.png", q: "Аз съм число, което е нито четно, нито по-голямо от 5, но съм сборът от 1 + 1." },
+            { id: "3", img: "3.png", q: "Имаш три монети: една от 2 цента, още една от 2 цента и една от 1 цент. Коя единствена монета е равна на тях?" },
+            { id: "4", img: "4.png", q: "Аз не съм кръгла! Моят ръб има 7 вдлъбнатини. Наричат ме „испански цвят“." },
+            { id: "5", img: "5.png", q: "Аз съм най-голямата от всички златисти монети. (50 цента)" },
+            { id: "6", img: "6.png", q: "Аз имам златист център и сребрист външен пръстен. Равна съм на 100 цента." },
+            { id: "7", img: "7.png", q: "Погледни ръба ми – аз съм единствената монета, на чийто ръб има гравиран текст или звезди." },
+            { id: "8", img: "8.png", q: "Най-малката евро банкнота. Аз съм в сив цвят." },
+            { id: "9", img: "9.png", q: "Червена банкнота, равна на две банкноти по 5 евро." },
+            { id: "10", img: "10.png", q: "Синя банкнота, на която е изобразен готически прозорец." },
+            { id: "11", img: "11.png", q: "Оранжева банкнота, равна на пет банкноти по 10 евро." },
+            { id: "12", img: "12.png", q: "Колко цента трябва да добавиш към 90 цента, за да получиш точно 1 евро?" },
+            { id: "13", img: "13.png", q: "Зелена банкнота, с която можеш да купиш много неща. Равна на две по 50 евро." },
+            { id: "14", img: "14.png", q: "Жълто-кафява банкнота. Равна на две по 100 евро." }
+        ];
+
+        let tasks = [];
+        let pool = [];
+        let history = [];
+        const balls = [];
+        const sphere = document.getElementById('lotto-sphere');
+
+        // Инициализация
+        function loadTasks() {
+            const saved = localStorage.getItem('euroBingoTasks');
+            if (saved) {
+                tasks = JSON.parse(saved);
+            } else {
+                tasks = JSON.parse(JSON.stringify(defaultTasks));
+            }
+            pool = [...tasks];
+        }
+
+        function initBalls() {
+            sphere.innerHTML = '';
+            balls.length = 0;
+            for (let i = 0; i < pool.length; i++) {
+                const el = document.createElement('div');
+                el.className = 'ball'; el.innerText = '€';
+                el.style.left = Math.random() * 420 + 'px'; el.style.top = Math.random() * 420 + 'px';
+                sphere.appendChild(el);
+                balls.push({ el, x: Math.random() * 2 - 1, y: Math.random() * 2 - 1, s: 1 });
+            }
+        }
+
+        loadTasks();
+        initBalls();
+
+        function startGame() { 
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            document.getElementById('intro-screen').style.display = 'none'; 
+        }
+
+        function animate() {
+            balls.forEach(b => {
+                let x = parseFloat(b.el.style.left); let y = parseFloat(b.el.style.top);
+                if (x <= 5 || x >= 425) b.x *= -1; if (y <= 5 || y >= 425) b.y *= -1;
+                b.el.style.left = (x + b.x * b.s) + 'px'; b.el.style.top = (y + b.y * b.s) + 'px';
+            });
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        function drawBall() {
+            if (pool.length === 0) return alert("Всички загадки са изтеглени!");
+            const btn = document.getElementById('draw-btn');
+            btn.disabled = true;
+
+            // Звук на разбъркване
+            balls.forEach(b => b.s = 15);
+            const mixSound = setInterval(() => playSound(200 + Math.random()*300, 0.1, "sine", 0.05), 100);
+
+            setTimeout(() => {
+                clearInterval(mixSound);
+                balls.forEach(b => b.s = 1);
+                
+                const idx = Math.floor(Math.random() * pool.length);
+                const picked = pool.splice(idx, 1)[0];
+                history.push(picked);
+                
+                // Нагласяме размера на шрифта според дължината на текста
+                const card = document.getElementById('card-display');
+                card.innerText = picked.q;
+                if(picked.q.length > 80) card.style.fontSize = "24px";
+                else if(picked.q.length > 50) card.style.fontSize = "28px";
+                else card.style.fontSize = "36px";
+
+                updateHistoryUI();
+                playSound(600, 0.5, "triangle", 0.2); 
+                
+                const visible = balls.filter(b => b.el.style.display !== 'none');
+                if(visible.length > 0) visible[0].el.style.display = 'none';
+                btn.disabled = false;
+            }, 1200);
+        }
+
+        function toggleHistory(show) { document.getElementById('history-overlay').style.display = show ? 'flex' : 'none'; }
+
+        function updateHistoryUI() {
+            const cont = document.getElementById('history-content');
+            cont.innerHTML = history.map((h, i) => `
+                <div class="history-item">
+                    <small>ТЕГЛЕНЕ №${i + 1}</small>
+                    <p>${h.q}</p>
+                    <img src="${h.img}" alt="Отговор">
+                </div>`).join('');
+        }
+
+        // --- УЧИТЕЛСКИ ПАНЕЛ ---
+        function toggleTeacher(show) {
+            const overlay = document.getElementById('teacher-overlay');
+            if (show) {
+                const cont = document.getElementById('teacher-content');
+                cont.innerHTML = tasks.map(t => `
+                    <div class="teacher-item" data-id="${t.id}">
+                        <img src="${t.img}" alt="Картинка ${t.id}">
+                        <textarea>${t.q}</textarea>
+                    </div>
+                `).join('');
+            }
+            overlay.style.display = show ? 'flex' : 'none';
+        }
+
+        function saveTeacherTasks() {
+            const items = document.querySelectorAll('.teacher-item');
+            items.forEach(item => {
+                const id = item.getAttribute('data-id');
+                const newText = item.querySelector('textarea').value;
+                const task = tasks.find(t => t.id === id);
+                if (task) task.q = newText;
+            });
+            localStorage.setItem('euroBingoTasks', JSON.stringify(tasks));
+            pool = [...tasks];
+            initBalls();
+            toggleTeacher(false);
+            alert("Въпросите са запазени успешно!");
+        }
+
+        // --- ПЕЧАТ НА БИЛЕТИ ---
+        function prepareAndPrint() {
+            const container = document.getElementById('tickets-layer');
+            container.innerHTML = "";
+            const totalTickets = 20; // Може да се промени броят билети
+            
+            // Всички 14 картинки
+            const allImages = [
+                "1.png", "2.png", "3.png", "4.png", "5.png", 
+                "6.png", "7.png", "8.png", "9.png", "10.png",
+                "11.png", "12.png", "13.png", "14.png"
+            ];
+
+            for (let i = 0; i < totalTickets; i += 2) {
+                const page = document.createElement('div');
+                page.className = 'page';
+                
+                for (let j = 0; j < 2; j++) {
+                    if (i + j >= totalTickets) break;
+
+                    const ticketNum = i + j + 1;
+                    const selected = [...allImages]
+                        .sort(() => 0.5 - Math.random())
+                        .slice(0, 9);
+
+                    let ticketHtml = `
+                        <div class="ticket">
+                            <div class="ticket-header">
+                                <div class="ticket-title">
+                                    <span class="b">B</span><span class="i">I</span><span class="n">N</span><span class="g">G</span><span class="o">O</span>
+                                </div>
+                                <div class="sub-title">ФИНАНСОВА ГРАМОТНОСТ</div>
+                                <div class="ticket-number">№${ticketNum}</div>
+                            </div>
+                            <table>
+                    `;
+
+                    for (let row = 0; row < 3; row++) {
+                        ticketHtml += "<tr>";
+                        for (let col = 0; col < 3; col++) {
+                            const imgSrc = selected[row * 3 + col];
+                            ticketHtml += `<td><img src="${imgSrc}" class="item-img"></td>`;
+                        }
+                        ticketHtml += "</tr>";
+                    }
+
+                    ticketHtml += `
+                            </table>
+                            <div class="ticket-footer">
+                                <span>Слушай загадката и зачеркни!</span>
+                                <span>Автор: Д. Кючукова</span>
+                            </div>
+                        </div>
+                    `;
+                    page.innerHTML += ticketHtml;
+                }
+                container.appendChild(page);
+            }
+            window.print();
+        }
+    </script>
+</body>
+</html>
